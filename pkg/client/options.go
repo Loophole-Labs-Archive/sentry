@@ -2,9 +2,7 @@
 
 package client
 
-import (
-	"github.com/loopholelabs/logging"
-)
+import "github.com/loopholelabs/logging"
 
 type Options struct {
 	Dial   DialFunc

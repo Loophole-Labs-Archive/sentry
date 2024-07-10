@@ -5,15 +5,15 @@
 package vsock
 
 import (
-	"context"
 	"errors"
-	"io"
+
+	"github.com/loopholelabs/sentry/pkg/client"
 )
 
 var (
 	UnsupportedErr = errors.New("not supported on this platform")
 )
 
-func DialContext(context.Context, uint32, uint32) (io.ReadWriteCloser, error) {
+func DialFunc(uint32, uint32) (client.DialFunc, error) {
 	return nil, UnsupportedErr
 }

@@ -9,6 +9,8 @@ import (
 	"io"
 
 	"golang.org/x/sys/unix"
+
+	"github.com/loopholelabs/sentry/pkg/client"
 )
 
 var (
@@ -16,7 +18,13 @@ var (
 	ConnectionErr = errors.New("unable to connect to vsock")
 )
 
-func Dial(cid uint32, port uint32) (io.ReadWriteCloser, error) {
+func DialFunc(cid uint32, port uint32) (client.DialFunc, error) {
+	return func() (io.ReadWriteCloser, error) {
+		return dial(cid, port)
+	}, nil
+}
+
+func dial(cid uint32, port uint32) (io.ReadWriteCloser, error) {
 	fd, err := unix.Socket(unix.AF_VSOCK, unix.SOCK_STREAM|unix.SOCK_CLOEXEC, 0)
 	if err != nil {
 		return nil, errors.Join(CreationErr, err)
