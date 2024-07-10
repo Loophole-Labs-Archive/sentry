@@ -60,10 +60,14 @@ type Response struct {
 }
 
 func (r *Response) Encode(buf *polyglot.Buffer) {
-	if r.Error != nil {
+	if r.Error == nil {
+		if r.Data == nil {
+			polyglot.Encoder(buf).Bytes(r.UUID[:]).Nil().Nil()
+		} else {
+			polyglot.Encoder(buf).Bytes(r.UUID[:]).Nil().Bytes(r.Data)
+		}
+	} else {
 		polyglot.Encoder(buf).Bytes(r.UUID[:]).Error(r.Error)
-	} else if r.Data == nil {
-		polyglot.Encoder(buf).Bytes(r.UUID[:]).Nil().Bytes(r.Data)
 	}
 }
 
@@ -80,6 +84,10 @@ func (r *Response) Decode(buf []byte) error {
 		return nil
 	}
 	if d.Nil() {
+		if d.Nil() {
+			r.Data = nil
+			return nil
+		}
 		r.Data, err = d.Bytes(r.Data)
 		if err != nil {
 			return errors.Join(DecodeErr, err)

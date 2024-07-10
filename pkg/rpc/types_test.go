@@ -64,5 +64,77 @@ func TestRequest(t *testing.T) {
 
 		buf.Reset()
 	})
+}
 
+func TestResponse(t *testing.T) {
+	buf := polyglot.GetBuffer()
+	t.Cleanup(func() {
+		polyglot.PutBuffer(buf)
+	})
+
+	_uuid := uuid.New()
+
+	randomData := make([]byte, 128)
+	_, err := rand.Read(randomData)
+	require.NoError(t, err)
+
+	t.Run("NoError", func(t *testing.T) {
+		encoded := Response{
+			UUID:  [UUIDSize]byte(_uuid[:]),
+			Error: nil,
+			Data:  randomData,
+		}
+		encoded.Encode(buf)
+		assert.Equal(t, 152, buf.Len())
+
+		var decoded Response
+		err = decoded.Decode(buf.Bytes())
+		require.NoError(t, err)
+
+		assert.Equal(t, encoded.UUID, decoded.UUID)
+		assert.Nil(t, decoded.Error)
+		assert.Equal(t, encoded.Data, decoded.Data)
+
+		buf.Reset()
+	})
+
+	t.Run("NilData", func(t *testing.T) {
+		encoded := Response{
+			UUID:  [UUIDSize]byte(_uuid[:]),
+			Error: nil,
+			Data:  nil,
+		}
+		encoded.Encode(buf)
+		assert.Equal(t, 21, buf.Len())
+
+		var decoded Response
+		err = decoded.Decode(buf.Bytes())
+		require.NoError(t, err)
+
+		assert.Equal(t, encoded.UUID, decoded.UUID)
+		assert.Nil(t, decoded.Error)
+		assert.Nil(t, decoded.Data)
+
+		buf.Reset()
+	})
+
+	t.Run("Error", func(t *testing.T) {
+		encoded := Response{
+			UUID:  [UUIDSize]byte(_uuid[:]),
+			Error: assert.AnError,
+			Data:  randomData,
+		}
+		encoded.Encode(buf)
+		assert.Equal(t, 63, buf.Len())
+
+		var decoded Response
+		err = decoded.Decode(buf.Bytes())
+		require.NoError(t, err)
+
+		assert.Equal(t, encoded.UUID, decoded.UUID)
+		assert.EqualError(t, encoded.Error, decoded.Error.Error())
+		assert.Nil(t, decoded.Data)
+
+		buf.Reset()
+	})
 }
