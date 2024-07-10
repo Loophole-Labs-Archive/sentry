@@ -72,18 +72,18 @@ func (s *Server) handle() {
 		case <-s.ctx.Done():
 			goto OUT
 		default:
-			s.logger.Info("waiting for connection")
+			s.logger.Info("waiting for connection\n")
 			s.activeConn, err = s.listener.Accept()
 			if err != nil {
-				s.logger.Error("unable to accept connection")
+				s.logger.Error("unable to accept connection\n")
 				goto OUT
 			}
-			s.logger.Info("connection was accepted")
+			s.logger.Info("connection was accepted\n")
 			s.rpc.HandleConnection(s.activeConn)
 		}
 	}
 OUT:
-	s.logger.Info("shutting down handle")
+	s.logger.Info("shutting down handle\n")
 	s.cancel()
 	s.wg.Done()
 }

@@ -82,7 +82,7 @@ func (lis *Listener) Close() error {
 		for conn := range lis.availableConnections {
 			err = conn.Close()
 			if err != nil {
-				lis.logger.Warnf("unable to close connection: %v", err)
+				lis.logger.Warnf("unable to close connection: %v\n", err)
 			}
 		}
 		close(lis.availableConnections)
@@ -94,13 +94,13 @@ func (lis *Listener) accept() {
 	for {
 		conn, err := lis.listener.AcceptUnix()
 		if err != nil {
-			lis.logger.Errorf("unable to accept connection: %v", err)
+			lis.logger.Errorf("unable to accept connection: %v\n", err)
 			break
 		}
 		select {
 		case lis.availableConnections <- conn:
 		default:
-			lis.logger.Warn("connection dropped")
+			lis.logger.Warn("connection dropped\n")
 		}
 	}
 	lis.wg.Done()
