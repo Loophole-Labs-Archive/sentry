@@ -218,11 +218,14 @@ func TestRPCRandomDisconnects(t *testing.T) {
 				close(done)
 				return
 			default:
+				_t := time.Duration(rand.Intn(100)) * time.Millisecond
+				t.Logf("will start client and server connections in %v", _t)
+				time.Sleep(_t)
 				t.Logf("starting client and server")
 				c1, c2 := net.Pipe()
 				startClient(c1)
 				startServer(c2)
-				_t := time.Duration(rand.Intn(100)) * time.Millisecond
+				_t = time.Duration(rand.Intn(100)) * time.Millisecond
 				t.Logf("will kill client and server connections in %v", _t)
 				time.Sleep(_t)
 				t.Logf("killing client and server connections")
@@ -232,9 +235,6 @@ func TestRPCRandomDisconnects(t *testing.T) {
 				require.NoError(t, err)
 				wg.Wait()
 				t.Logf("killed client and server connections")
-				_t = time.Duration(rand.Intn(100)) * time.Millisecond
-				t.Logf("will wait for %v before starting again", _t)
-				time.Sleep(_t)
 			}
 		}
 	}()
