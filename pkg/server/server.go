@@ -4,6 +4,7 @@ package server
 
 import (
 	"errors"
+	"net"
 
 	"github.com/loopholelabs/sentry/internal/listener"
 )
@@ -15,7 +16,8 @@ var (
 )
 
 type Server struct {
-	listener *listener.Listener
+	listener   *listener.Listener
+	activeConn *net.UnixConn
 }
 
 func New(options *Options) (*Server, error) {
