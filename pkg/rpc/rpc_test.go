@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net"
-	"os"
 	"sync"
 	"testing"
 )
@@ -25,9 +24,7 @@ func echoHandle(t *testing.T) HandleRPC {
 
 func TestRPCSimple(t *testing.T) {
 	c1, c2 := net.Pipe()
-	logger := logging.NewConsoleLogger()
-	logger.SetOutput(os.Stdout)
-	logger.SetLevel(logging.DebugLevel)
+	logger := logging.NewTestLogger(t)
 	ctx := context.Background()
 
 	client := NewClient(echoHandle(t), logger)
