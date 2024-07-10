@@ -2,14 +2,15 @@
 
 package client
 
-import "github.com/loopholelabs/logging"
+import (
+	"github.com/loopholelabs/logging"
+)
 
 type Options struct {
-	CID    uint32
-	Port   uint32
+	Dial   DialFunc
 	Logger logging.Logger
 }
 
 func validOptions(options *Options) bool {
-	return options != nil && options.Logger != nil
+	return options != nil && options.Dial != nil && options.Logger != nil
 }

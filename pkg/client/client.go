@@ -9,9 +9,10 @@ import (
 
 	"github.com/loopholelabs/logging"
 
-	"github.com/loopholelabs/sentry/internal/vsock"
 	"github.com/loopholelabs/sentry/pkg/rpc"
 )
+
+type DialFunc func() (io.ReadWriteCloser, error)
 
 const (
 	maxBackoff = time.Second
@@ -24,8 +25,7 @@ var (
 
 type Client struct {
 	rpc    *rpc.Client
-	cid    uint32
-	port   uint32
+	dial   DialFunc
 	logger logging.Logger
 }
 
@@ -35,8 +35,7 @@ func New(options *Options) (*Client, error) {
 	}
 	c := &Client{
 		rpc:    rpc.NewClient(options.Logger),
-		cid:    options.CID,
-		port:   options.Port,
+		dial:   options.Dial,
 		logger: options.Logger,
 	}
 	go c.handle()
@@ -48,7 +47,7 @@ func (c *Client) connect() io.ReadWriteCloser {
 	var backoff time.Duration
 	var conn io.ReadWriteCloser
 	for {
-		conn, err = vsock.Dial(c.cid, c.port)
+		conn, err = c.dial()
 		if err == nil {
 			return conn
 		}
