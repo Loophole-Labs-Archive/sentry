@@ -98,8 +98,12 @@ func (r *Response) Decode(buf []byte) error {
 	return DecodeErr
 }
 
-type ProcessRequest struct {
-	Request  Request
-	Response Response
-	Buffer   *polyglot.Buffer
+func DecodeUUID(buf []byte) (uuid.UUID, error) {
+	d := polyglot.Decoder(buf)
+	var _uuid uuid.UUID
+	_, err := d.Bytes(_uuid[:])
+	if err != nil {
+		return uuid.Nil, errors.Join(DecodeErr, err)
+	}
+	return _uuid, nil
 }

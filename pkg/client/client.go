@@ -34,12 +34,22 @@ func New(options *Options) (*Client, error) {
 		return nil, OptionsErr
 	}
 	c := &Client{
-		rpc:    rpc.NewClient(options.Logger),
 		dial:   options.Dial,
 		logger: options.Logger,
 	}
-	go c.handle()
+	c.rpc = rpc.NewClient(c.handle, options.Logger)
+	go c.loop()
 	return c, nil
+}
+
+func (c *Client) handle(request *rpc.Request, response *rpc.Response) {
+	switch rpc.Type(request.Type) {
+	case rpc.TypePing:
+		response.Data = request.Data
+	default:
+		c.logger.Errorf("unknown request type: %d (worker %d)", request.Type)
+		response.Error = rpc.UnknownErr
+	}
 }
 
 func (c *Client) connect() io.ReadWriteCloser {
@@ -65,7 +75,7 @@ func (c *Client) connect() io.ReadWriteCloser {
 	}
 }
 
-func (c *Client) handle() {
+func (c *Client) loop() {
 	for {
 		c.logger.Info("creating connection")
 		conn := c.connect()

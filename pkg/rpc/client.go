@@ -4,7 +4,6 @@ package rpc
 
 import (
 	"context"
-	"errors"
 	"io"
 	"sync"
 
@@ -12,17 +11,9 @@ import (
 	"github.com/loopholelabs/polyglot/v2"
 )
 
-var (
-	UnknownRequestTypeErr = errors.New("unknown request type")
-)
-
-const (
-	MaximumQueueSize         = 1024
-	MaximumRequestPacketSize = 1024
-	NumWorkers               = 1
-)
-
 type Client struct {
+	handle HandleRPC
+
 	processQueue       chan *ProcessRequest
 	priorityWriteQueue chan *ProcessRequest
 	writeQueue         chan *ProcessRequest
@@ -36,8 +27,9 @@ type Client struct {
 	wg       sync.WaitGroup
 }
 
-func NewClient(logger logging.Logger) *Client {
+func NewClient(handle HandleRPC, logger logging.Logger) *Client {
 	c := &Client{
+		handle:             handle,
 		processQueue:       make(chan *ProcessRequest, MaximumQueueSize),
 		priorityWriteQueue: make(chan *ProcessRequest, MaximumQueueSize),
 		writeQueue:         make(chan *ProcessRequest, MaximumQueueSize),
@@ -76,7 +68,7 @@ func (c *Client) read() {
 		n, err = io.ReadAtLeast(c.activeConn, buf, MinimumRequestSize)
 		if err != nil {
 			c.logger.Errorf("unable to read from connection: %v", err)
-			break
+			goto OUT
 		}
 		processRequest := new(ProcessRequest)
 		err = processRequest.Request.Decode(buf[:n])
@@ -87,6 +79,7 @@ func (c *Client) read() {
 		c.logger.Infof("queueing request %s of type %d for processing", processRequest.Request.UUID, processRequest.Request.Type)
 		c.processQueue <- processRequest
 	}
+OUT:
 	c.logger.Infof("shutting down read loop")
 	c.cancel()
 	c.wg.Done()
@@ -99,7 +92,7 @@ func (c *Client) write() {
 	for {
 		select {
 		case <-c.ctx.Done():
-			break
+			goto OUT
 		case processRequest, ok = <-c.priorityWriteQueue:
 			priority = true
 		case processRequest, ok = <-c.writeQueue:
@@ -107,22 +100,23 @@ func (c *Client) write() {
 		}
 		if !ok {
 			c.logger.Error("write queue was closed")
-			break
+			goto OUT
 		}
-		c.logger.Infof("writing request: %s of type %d (priority %t)", processRequest.Request.UUID, processRequest.Request.Type, priority)
-		_, err := c.activeConn.Write(processRequest.Buffer.Bytes())
+		c.logger.Infof("writing response for request %s of type %d (priority %t)", processRequest.Request.UUID, processRequest.Request.Type, priority)
+		_, err := c.activeConn.Write(processRequest.ResponseBuffer.Bytes())
 		if err != nil {
 			c.logger.Errorf("unable to write response: %v", err)
 			select {
 			case c.priorityWriteQueue <- processRequest:
-				c.logger.Infof("requeueing request %s of type %d for priority writing", processRequest.Request.UUID, processRequest.Request.Type)
+				c.logger.Infof("requeueing response for request %s of type %d for priority writing", processRequest.Request.UUID, processRequest.Request.Type)
 			default:
-				c.logger.Warnf("priority write queue is full, dropping request %s of type %d", processRequest.Request.UUID, processRequest.Request.Type)
+				c.logger.Warnf("priority write queue is full, dropping response for request %s of type %d", processRequest.Request.UUID, processRequest.Request.Type)
 			}
-			break
+			goto OUT
 		}
-		polyglot.PutBuffer(processRequest.Buffer)
+		polyglot.PutBuffer(processRequest.ResponseBuffer)
 	}
+OUT:
 	c.logger.Infof("shutting down write loop")
 	c.cancel()
 	c.wg.Done()
@@ -136,19 +130,13 @@ func (c *Client) worker(id int) {
 		processRequest, ok = <-c.processQueue
 		if !ok {
 			c.logger.Errorf("process queue was closed (worker %d)", id)
-			break
+			goto OUT
 		}
-		c.logger.Infof("processing request: %s of type %d (worker %d)", processRequest.Request.UUID, processRequest.Request.Type, id)
+		c.logger.Infof("processing request %s of type %d (worker %d)", processRequest.Request.UUID, processRequest.Request.Type, id)
 		processRequest.Response.UUID = processRequest.Request.UUID
-		switch RequestType(processRequest.Request.Type) {
-		case RequestTypePing:
-			processRequest.Response.Data = processRequest.Request.Data
-		default:
-			c.logger.Errorf("unknown request type: %d (worker %d)", processRequest.Request.Type, id)
-			processRequest.Response.Error = UnknownRequestTypeErr
-		}
-		processRequest.Buffer = polyglot.GetBuffer()
-		processRequest.Response.Encode(processRequest.Buffer)
+		c.handle(&processRequest.Request, &processRequest.Response)
+		processRequest.ResponseBuffer = polyglot.GetBuffer()
+		processRequest.Response.Encode(processRequest.ResponseBuffer)
 		select {
 		case c.writeQueue <- processRequest:
 			c.logger.Infof("queueing request %s of type %d for writing", processRequest.Request.UUID, processRequest.Request.Type)
@@ -156,6 +144,7 @@ func (c *Client) worker(id int) {
 			c.logger.Warnf("write queue is full (worker %d), dropping request %s of type %d", id, processRequest.Request.UUID, processRequest.Request.Type)
 		}
 	}
+OUT:
 	c.logger.Infof("shutting down worker %d", id)
 	c.workerWg.Done()
 }
