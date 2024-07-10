@@ -6,9 +6,10 @@ package vsock
 
 import (
 	"errors"
-	"golang.org/x/sys/unix"
 	"io"
 	"sync/atomic"
+
+	"golang.org/x/sys/unix"
 )
 
 var (

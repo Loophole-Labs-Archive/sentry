@@ -5,10 +5,11 @@ package rpc
 import (
 	"context"
 	"errors"
-	"github.com/loopholelabs/logging"
-	"github.com/loopholelabs/polyglot/v2"
 	"io"
 	"sync"
+
+	"github.com/loopholelabs/logging"
+	"github.com/loopholelabs/polyglot/v2"
 )
 
 var (

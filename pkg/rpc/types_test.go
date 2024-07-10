@@ -4,11 +4,12 @@ package rpc
 
 import (
 	"crypto/rand"
+	"testing"
+
 	"github.com/google/uuid"
 	"github.com/loopholelabs/polyglot/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestRequest(t *testing.T) {
