@@ -16,12 +16,6 @@ var (
 	UnknownRequestTypeErr = errors.New("unknown request type")
 )
 
-type ProcessRequest struct {
-	Request  Request
-	Response Response
-	Buffer   *polyglot.Buffer
-}
-
 const (
 	MaximumQueueSize         = 1024
 	MaximumRequestPacketSize = 1024

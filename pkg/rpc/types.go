@@ -97,3 +97,9 @@ func (r *Response) Decode(buf []byte) error {
 	}
 	return DecodeErr
 }
+
+type ProcessRequest struct {
+	Request  Request
+	Response Response
+	Buffer   *polyglot.Buffer
+}
