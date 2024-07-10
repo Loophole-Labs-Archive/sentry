@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/google/uuid"
 	"github.com/loopholelabs/polyglot/v2"
-	"unsafe"
 )
 
 var (
@@ -14,11 +13,12 @@ var (
 )
 
 const (
-	UUIDSize = unsafe.Sizeof(uuid.UUID{})
+	MinimumRequestSize  = 22
+	MinimumResponseSize = 21
 )
 
 type Request struct {
-	UUID [UUIDSize]byte
+	UUID uuid.UUID
 	Type uint32
 	Data []byte
 }
@@ -54,7 +54,7 @@ func (r *Request) Decode(buf []byte) error {
 }
 
 type Response struct {
-	UUID  [UUIDSize]byte
+	UUID  uuid.UUID
 	Error error
 	Data  []byte
 }

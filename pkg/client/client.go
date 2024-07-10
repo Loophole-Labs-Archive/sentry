@@ -4,12 +4,13 @@ package client
 
 import (
 	"errors"
-	"github.com/loopholelabs/sentry/internal/vsock"
 	"io"
-	"sync"
 	"time"
 
 	"github.com/loopholelabs/logging"
+
+	"github.com/loopholelabs/sentry/internal/vsock"
+	"github.com/loopholelabs/sentry/pkg/rpc"
 )
 
 const (
@@ -22,35 +23,34 @@ var (
 )
 
 type Client struct {
-	activeConn io.ReadWriteCloser
-	cid        uint32
-	port       uint32
-	logger     logging.Logger
-	wg         sync.WaitGroup
+	rpc    *rpc.Client
+	cid    uint32
+	port   uint32
+	logger logging.Logger
 }
 
 func New(options *Options) (*Client, error) {
 	if !validOptions(options) {
 		return nil, OptionsErr
 	}
-
 	c := &Client{
+		rpc:    rpc.NewClient(options.Logger),
 		cid:    options.CID,
 		port:   options.Port,
 		logger: options.Logger,
 	}
-	c.wg.Add(1)
-	go c.read()
+	go c.handle()
 	return c, nil
 }
 
-func (c *Client) connect() {
+func (c *Client) connect() io.ReadWriteCloser {
 	var err error
 	var backoff time.Duration
+	var conn io.ReadWriteCloser
 	for {
-		c.activeConn, err = vsock.Dial(c.cid, c.port)
+		conn, err = vsock.Dial(c.cid, c.port)
 		if err == nil {
-			break
+			return conn
 		}
 		c.logger.Errorf("unable to create connection: %v", err)
 		if backoff == 0 {
@@ -61,29 +61,16 @@ func (c *Client) connect() {
 				backoff = maxBackoff
 			}
 		}
-		c.logger.Infof("retrying in %v", backoff)
+		c.logger.Infof("retrying in %s", backoff)
 		time.Sleep(backoff)
 	}
 }
 
-func (c *Client) read() {
-	buf := make([]byte, 4096)
-CONNECT:
-	if c.activeConn == nil {
-		c.logger.Info("creating connection")
-		c.connect()
-		c.logger.Info("connection created")
-	}
+func (c *Client) handle() {
 	for {
-		n, err := c.activeConn.Read(buf)
-		if err != nil {
-			c.logger.Errorf("unable to read from connection: %v", err)
-			_ = c.activeConn.Close()
-			c.activeConn = nil
-			goto CONNECT
-		}
-		c.logger.Infof("read %d bytes", n)
+		c.logger.Info("creating connection")
+		conn := c.connect()
+		c.logger.Info("connection created")
+		c.rpc.HandleConnection(conn)
 	}
-
-	c.wg.Done()
 }

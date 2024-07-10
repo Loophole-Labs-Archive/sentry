@@ -8,6 +8,7 @@ import (
 	"errors"
 	"golang.org/x/sys/unix"
 	"io"
+	"sync/atomic"
 )
 
 var (
@@ -17,8 +18,20 @@ var (
 	CloseErr = errors.New("unable to close vsock connection")
 )
 
+const (
+	stateConnected = iota
+	stateClosed
+)
+
 type conn struct {
-	fd int
+	state atomic.Uint32
+	fd    int
+}
+
+func newConn(fd int) *conn {
+	return &conn{
+		fd: fd,
+	}
 }
 
 func (c *conn) Read(b []byte) (int, error) {
@@ -50,14 +63,16 @@ func (c *conn) Write(b []byte) (int, error) {
 }
 
 func (c *conn) Close() error {
-	if err := unix.Shutdown(c.fd, unix.SHUT_RDWR); err != nil {
-		if _err := unix.Close(c.fd); _err != nil {
-			err = errors.Join(err, _err)
+	if c.state.CompareAndSwap(stateConnected, stateClosed) {
+		if err := unix.Shutdown(c.fd, unix.SHUT_RDWR); err != nil {
+			if _err := unix.Close(c.fd); _err != nil {
+				err = errors.Join(err, _err)
+			}
+			return errors.Join(CloseErr, err)
 		}
-		return errors.Join(CloseErr, err)
-	}
-	if err := unix.Close(c.fd); err != nil {
-		return errors.Join(CloseErr, err)
+		if err := unix.Close(c.fd); err != nil {
+			return errors.Join(CloseErr, err)
+		}
 	}
 	return nil
 }

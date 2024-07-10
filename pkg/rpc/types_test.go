@@ -25,7 +25,7 @@ func TestRequest(t *testing.T) {
 
 	t.Run("Simple", func(t *testing.T) {
 		encoded := Request{
-			UUID: [UUIDSize]byte(_uuid[:]),
+			UUID: _uuid,
 			Type: 32,
 			Data: expectedData,
 		}
@@ -45,12 +45,12 @@ func TestRequest(t *testing.T) {
 
 	t.Run("NilData", func(t *testing.T) {
 		encoded := Request{
-			UUID: [UUIDSize]byte(_uuid[:]),
+			UUID: _uuid,
 			Type: 32,
 			Data: nil,
 		}
 		encoded.Encode(buf)
-		assert.Equal(t, 22, buf.Len())
+		assert.Equal(t, MinimumRequestSize, buf.Len())
 
 		decoded := Request{
 			Data: expectedData,
@@ -80,7 +80,7 @@ func TestResponse(t *testing.T) {
 
 	t.Run("NoError", func(t *testing.T) {
 		encoded := Response{
-			UUID:  [UUIDSize]byte(_uuid[:]),
+			UUID:  _uuid,
 			Error: nil,
 			Data:  randomData,
 		}
@@ -100,7 +100,7 @@ func TestResponse(t *testing.T) {
 
 	t.Run("NilData", func(t *testing.T) {
 		encoded := Response{
-			UUID:  [UUIDSize]byte(_uuid[:]),
+			UUID:  _uuid,
 			Error: nil,
 			Data:  nil,
 		}
@@ -120,7 +120,7 @@ func TestResponse(t *testing.T) {
 
 	t.Run("Error", func(t *testing.T) {
 		encoded := Response{
-			UUID:  [UUIDSize]byte(_uuid[:]),
+			UUID:  _uuid,
 			Error: assert.AnError,
 			Data:  randomData,
 		}

@@ -27,5 +27,5 @@ func Dial(cid uint32, port uint32) (io.ReadWriteCloser, error) {
 	}); err != nil {
 		return nil, errors.Join(ConnectionErr, err)
 	}
-	return &conn{fd}, nil
+	return newConn(fd), nil
 }
