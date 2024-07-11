@@ -6,7 +6,7 @@ toolchain go1.22.4
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/loopholelabs/logging v0.1.4
+	github.com/loopholelabs/logging v0.1.5
 	github.com/loopholelabs/polyglot/v2 v2.0.1
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/sys v0.22.0
