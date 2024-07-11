@@ -55,6 +55,10 @@ func New(options *Options) (*Server, error) {
 	return s, nil
 }
 
+func (s *Server) Do(ctx context.Context, request *rpc.Request, response *rpc.Response) error {
+	return s.rpc.Do(ctx, request, response)
+}
+
 func (s *Server) Close() error {
 	err := s.listener.Close()
 	if err != nil {
