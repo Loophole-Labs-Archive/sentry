@@ -37,19 +37,9 @@ func New(options *Options) (*Client, error) {
 		dial:   options.Dial,
 		logger: options.Logger,
 	}
-	c.rpc = rpc.NewClient(c.handle, options.Logger)
+	c.rpc = rpc.NewClient(options.Handle, options.Logger)
 	go c.loop()
 	return c, nil
-}
-
-func (c *Client) handle(request *rpc.Request, response *rpc.Response) {
-	switch rpc.Type(request.Type) {
-	case rpc.TypePing:
-		response.Data = request.Data
-	default:
-		c.logger.Errorf("unknown request type: %d\n", request.Type)
-		response.Error = rpc.UnknownErr
-	}
 }
 
 func (c *Client) connect() io.ReadWriteCloser {

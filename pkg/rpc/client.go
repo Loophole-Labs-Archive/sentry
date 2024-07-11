@@ -12,7 +12,7 @@ import (
 )
 
 type Client struct {
-	handle HandleRPC
+	handle HandleFunc
 
 	processQueue       chan *ProcessRequest
 	priorityWriteQueue chan *ProcessRequest
@@ -29,7 +29,7 @@ type Client struct {
 	wg       sync.WaitGroup
 }
 
-func NewClient(handle HandleRPC, logger logging.Logger) *Client {
+func NewClient(handle HandleFunc, logger logging.Logger) *Client {
 	c := &Client{
 		handle:             handle,
 		processQueue:       make(chan *ProcessRequest, MaximumQueueSize),

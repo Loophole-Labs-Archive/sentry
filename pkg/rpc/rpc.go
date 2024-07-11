@@ -2,14 +2,7 @@
 
 package rpc
 
-import (
-	"errors"
-	"github.com/loopholelabs/polyglot/v2"
-)
-
-var (
-	UnknownErr = errors.New("unknown rpc type")
-)
+import "github.com/loopholelabs/polyglot/v2"
 
 const (
 	MaximumQueueSize          = 1024
@@ -18,13 +11,7 @@ const (
 	NumWorkers                = 1
 )
 
-type HandleRPC func(*Request, *Response)
-
-type Type uint32
-
-const (
-	TypePing Type = iota
-)
+type HandleFunc func(*Request, *Response)
 
 type ProcessRequest struct {
 	Request        Request

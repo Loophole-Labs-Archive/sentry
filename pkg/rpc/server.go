@@ -61,7 +61,7 @@ func (s *Server) HandleConnection(conn io.ReadWriteCloser) {
 	s.logger.Infof("[Server] read and write loops have shut down\n")
 }
 
-func (s *Server) DoRPC(ctx context.Context, request *Request, response *Response) (err error) {
+func (s *Server) Do(ctx context.Context, request *Request, response *Response) (err error) {
 	buffer := polyglot.GetBuffer()
 	request.Encode(buffer)
 	inflightRequest := &InflightRequest{
@@ -83,6 +83,7 @@ func (s *Server) DoRPC(ctx context.Context, request *Request, response *Response
 		err = context.Canceled
 		goto OUT
 	case s.writeQueue <- inflightRequest:
+		s.logger.Infof("[Server] request %s of type %d was queued\n", inflightRequest.Request.UUID, inflightRequest.Request.Type)
 	}
 
 	select {

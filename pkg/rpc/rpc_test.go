@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func echoHandle(t *testing.T) HandleRPC {
+func echoHandle(t *testing.T) HandleFunc {
 	return func(req *Request, res *Response) {
 		//t.Logf("handling request %s of type %d", req.UUID, req.Type)
 		assert.Equal(t, req.UUID, res.UUID)
@@ -61,7 +61,7 @@ func TestRPCSimple(t *testing.T) {
 	}
 	var res Response
 
-	err := server.DoRPC(context.Background(), &req, &res)
+	err := server.Do(context.Background(), &req, &res)
 	require.NoError(t, err)
 
 	assert.Equal(t, req.UUID, res.UUID)
@@ -95,7 +95,7 @@ func TestRPCSingleDisconnect(t *testing.T) {
 			Data: []byte("hello world"),
 		}
 		var res Response
-		err := server.DoRPC(context.Background(), &req, &res)
+		err := server.Do(context.Background(), &req, &res)
 		require.NoError(t, err)
 		assert.Equal(t, req.UUID, res.UUID)
 		assert.NoError(t, res.Error)
@@ -175,7 +175,7 @@ func TestRPCRandomDisconnects(t *testing.T) {
 						Data: []byte("hello world"),
 					}
 					var res Response
-					err := server.DoRPC(ctx, &req, &res)
+					err := server.Do(ctx, &req, &res)
 					if err != nil {
 						select {
 						case <-ctx.Done():
