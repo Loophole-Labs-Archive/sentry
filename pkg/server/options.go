@@ -5,7 +5,7 @@ package server
 import (
 	"github.com/loopholelabs/logging"
 
-	"github.com/loopholelabs/sentry/internal/listener"
+	"github.com/loopholelabs/sentry/pkg/listener"
 )
 
 type Options struct {

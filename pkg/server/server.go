@@ -10,7 +10,7 @@ import (
 
 	"github.com/loopholelabs/logging"
 
-	"github.com/loopholelabs/sentry/internal/listener"
+	"github.com/loopholelabs/sentry/pkg/listener"
 	"github.com/loopholelabs/sentry/pkg/rpc"
 )
 
@@ -76,18 +76,18 @@ func (s *Server) handle() {
 		case <-s.ctx.Done():
 			goto OUT
 		default:
-			s.logger.Info("waiting for connection\n")
+			s.logger.Info("[Server] waiting for connection")
 			s.activeConn, err = s.listener.Accept()
 			if err != nil {
-				s.logger.Error("unable to accept connection\n")
+				s.logger.Error("[Server] unable to accept connection")
 				goto OUT
 			}
-			s.logger.Info("connection was accepted\n")
+			s.logger.Info("[Server] connection was accepted")
 			s.rpc.HandleConnection(s.activeConn)
 		}
 	}
 OUT:
-	s.logger.Info("shutting down handle\n")
+	s.logger.Info("[Server] shutting down handle")
 	s.cancel()
 	s.wg.Done()
 }
