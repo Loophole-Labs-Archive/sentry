@@ -99,8 +99,6 @@ OUT:
 	s.inflightMutex.Lock()
 	delete(s.inflight, request.UUID)
 	s.inflightMutex.Unlock()
-
-	polyglot.PutBuffer(buffer)
 	return err
 }
 
@@ -132,8 +130,9 @@ func (s *Server) write() {
 				s.logger.Warnf("[Server] priority write queue is full, requeue of request %s of type %d for priority writing will block\n", inflightRequest.Request.UUID, inflightRequest.Request.Type)
 				s.priorityWriteQueue <- inflightRequest
 			}
-			break
+			goto OUT
 		}
+		polyglot.PutBuffer(inflightRequest.RequestBuffer)
 	}
 OUT:
 	s.logger.Infof("[Server] shutting down write loop\n")
