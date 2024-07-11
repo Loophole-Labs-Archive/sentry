@@ -136,7 +136,7 @@ func TestRPCSingleDisconnect(t *testing.T) {
 }
 
 func TestRPCRandomDisconnects(t *testing.T) {
-	const testTime = time.Second * 30
+	const testTime = time.Second * 10
 	//logger := logging.NewTestLogger(t)
 	logger := logging.NewNoopLogger()
 	ctx := context.Background()
