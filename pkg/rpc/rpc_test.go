@@ -7,6 +7,7 @@ import (
 	"io"
 	"math/rand"
 	"net"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -146,6 +147,10 @@ func TestRPCRandomDisconnects(t *testing.T) {
 
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
+	concurrentRPCs := make(chan struct{}, runtime.NumCPU())
+	for i := 0; i < runtime.NumCPU(); i++ {
+		concurrentRPCs <- struct{}{}
+	}
 	rpcDone := make(chan struct{})
 	scheduledRPCs := uint32(0)
 	completedRPCs := 0
@@ -160,7 +165,7 @@ func TestRPCRandomDisconnects(t *testing.T) {
 				rpcWg.Wait()
 				close(rpcDone)
 				return
-			default:
+			case <-concurrentRPCs:
 				rpcWg.Add(1)
 				go func(i uint32) {
 					req := Request{
@@ -183,6 +188,7 @@ func TestRPCRandomDisconnects(t *testing.T) {
 					require.Equal(t, req.Data, res.Data)
 					completedRPCs++
 				OUT:
+					concurrentRPCs <- struct{}{}
 					rpcWg.Done()
 				}(scheduledRPCs)
 				scheduledRPCs++

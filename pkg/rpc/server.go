@@ -75,7 +75,6 @@ func (s *Server) DoRPC(ctx context.Context, request *Request, response *Response
 	s.inflightMutex.Unlock()
 
 	select {
-	case s.writeQueue <- inflightRequest:
 	case <-ctx.Done():
 		err = context.Canceled
 		goto OUT
@@ -83,6 +82,7 @@ func (s *Server) DoRPC(ctx context.Context, request *Request, response *Response
 		s.logger.Warnf("[Server] context was canceled, cancelling request %s of type %d\n", inflightRequest.Request.UUID, inflightRequest.Request.Type)
 		err = context.Canceled
 		goto OUT
+	case s.writeQueue <- inflightRequest:
 	}
 
 	select {
