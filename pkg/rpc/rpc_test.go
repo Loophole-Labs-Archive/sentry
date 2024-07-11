@@ -9,6 +9,7 @@ import (
 	"net"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -152,7 +153,8 @@ func TestRPCRandomDisconnects(t *testing.T) {
 	}
 	rpcDone := make(chan struct{})
 	scheduledRPCs := uint32(0)
-	completedRPCs := 0
+	var completedRPCs atomic.Uint32
+	completedRPCs.Store(0)
 	wg.Add(1)
 	go func() {
 		wg.Done()
@@ -185,7 +187,7 @@ func TestRPCRandomDisconnects(t *testing.T) {
 					require.Equal(t, req.UUID, res.UUID)
 					require.NoError(t, res.Error)
 					require.Equal(t, req.Data, res.Data)
-					completedRPCs++
+					completedRPCs.Add(1)
 				OUT:
 					concurrentRPCs <- struct{}{}
 					rpcWg.Done()
@@ -263,5 +265,5 @@ func TestRPCRandomDisconnects(t *testing.T) {
 	}
 
 	t.Logf("%d rpcs were scheduled", scheduledRPCs)
-	t.Logf("%d rpc completed successfully", completedRPCs)
+	t.Logf("%d rpc completed successfully", completedRPCs.Load())
 }
