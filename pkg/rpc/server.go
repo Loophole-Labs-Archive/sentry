@@ -80,7 +80,7 @@ func (s *Server) Do(ctx context.Context, request *Request, response *Response) (
 		goto OUT
 	case <-s.externalCtx.Done():
 		s.logger.Warnf("[Server] context was canceled, cancelling request %s of type %d\n", inflightRequest.Request.UUID, inflightRequest.Request.Type)
-		err = context.Canceled
+		err = context.DeadlineExceeded
 		goto OUT
 	case s.writeQueue <- inflightRequest:
 		s.logger.Infof("[Server] request %s of type %d was queued\n", inflightRequest.Request.UUID, inflightRequest.Request.Type)
@@ -91,7 +91,7 @@ func (s *Server) Do(ctx context.Context, request *Request, response *Response) (
 		err = context.Canceled
 	case <-s.externalCtx.Done():
 		s.logger.Warnf("[Server] context was canceled, cancelling request %s of type %d\n", inflightRequest.Request.UUID, inflightRequest.Request.Type)
-		err = context.Canceled
+		err = context.DeadlineExceeded
 	case <-inflightRequest.complete:
 		s.logger.Infof("[Server] request %s of type %d was completed\n", inflightRequest.Request.UUID, inflightRequest.Request.Type)
 	}
