@@ -18,7 +18,7 @@ import (
 )
 
 func testDialFunc(path string) client.DialFunc {
-	return func() (io.ReadWriteCloser, error) {
+	return func(ctx context.Context) (io.ReadWriteCloser, error) {
 		return net.DialUnix("unix", nil, &net.UnixAddr{
 			Name: path,
 			Net:  "unix",

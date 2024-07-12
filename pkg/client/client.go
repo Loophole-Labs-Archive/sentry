@@ -13,7 +13,7 @@ import (
 	"github.com/loopholelabs/sentry/pkg/rpc"
 )
 
-type DialFunc func() (io.ReadWriteCloser, error)
+type DialFunc func(ctx context.Context) (io.ReadWriteCloser, error)
 
 const (
 	maxBackoff = time.Second
@@ -64,7 +64,7 @@ func (c *Client) connect() io.ReadWriteCloser {
 			return nil
 		default:
 		}
-		conn, err = c.dial()
+		conn, err = c.dial(c.ctx)
 		if err == nil {
 			return conn
 		}

@@ -17,7 +17,6 @@ var (
 	BadFDErr = errors.New("bad file descriptor")
 	ReadErr  = errors.New("unable to read from vsock connection")
 	WriteErr = errors.New("unable to write to vsock connection")
-	CloseErr = errors.New("unable to close vsock connection")
 )
 
 const (
