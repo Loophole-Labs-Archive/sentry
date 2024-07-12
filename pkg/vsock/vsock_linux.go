@@ -25,6 +25,7 @@ func DialFunc(cid uint32, port uint32) (client.DialFunc, error) {
 }
 
 func dial(cid uint32, port uint32) (io.ReadWriteCloser, error) {
+	// TODO: convert to dialContext, drafter has the implementation in the internal/vsock package
 	fd, err := unix.Socket(unix.AF_VSOCK, unix.SOCK_STREAM|unix.SOCK_CLOEXEC, 0)
 	if err != nil {
 		return nil, errors.Join(CreationErr, err)

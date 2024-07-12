@@ -9,8 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/loopholelabs/logging"
-
+	logging "github.com/loopholelabs/logging/types"
 	"github.com/loopholelabs/sentry/pkg/rpc"
 )
 
@@ -40,7 +39,7 @@ func New(options *Options) (*Client, error) {
 	}
 	c := &Client{
 		dial:   options.Dial,
-		logger: options.Logger,
+		logger: options.Logger.SubLogger("client"),
 	}
 	c.ctx, c.cancel = context.WithCancel(context.Background())
 	c.rpc = rpc.NewClient(options.Handle, options.Logger)
@@ -74,7 +73,7 @@ func (c *Client) connect() io.ReadWriteCloser {
 			return nil
 		default:
 		}
-		c.logger.Errorf("[Client] unable to create connection: %v\n", err)
+		c.logger.Error().Err(err).Msg("unable to create connection")
 		if backoff == 0 {
 			backoff = minBackoff
 		} else if backoff < maxBackoff {
@@ -83,7 +82,7 @@ func (c *Client) connect() io.ReadWriteCloser {
 				backoff = maxBackoff
 			}
 		}
-		c.logger.Infof("[Client] retrying in %s\n", backoff)
+		c.logger.Info().Msgf("retrying in %s", backoff)
 		time.Sleep(backoff)
 	}
 }
@@ -95,12 +94,12 @@ func (c *Client) loop() {
 			goto OUT
 		default:
 		}
-		c.logger.Info("[Client] creating connection")
+		c.logger.Info().Msg("creating connection")
 		conn := c.connect()
 		if conn == nil {
 			goto OUT
 		}
-		c.logger.Info("[Client] connection created")
+		c.logger.Info().Msg("connection created")
 		c.rpc.HandleConnection(conn)
 	}
 OUT:

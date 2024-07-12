@@ -35,7 +35,7 @@ func echoHandle(t *testing.T) rpc.HandleFunc {
 }
 
 func TestReconnect(t *testing.T) {
-	logger := logging.NewTestLogger(t)
+	logger := logging.NewTest(t, logging.Zerolog, t.Name())
 	serverOpts := &Options{
 		UnixPath: fmt.Sprintf("%s/%s.sock", t.TempDir(), t.Name()),
 		MaxConn:  1,

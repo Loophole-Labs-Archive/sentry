@@ -8,7 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/loopholelabs/logging"
+	logging "github.com/loopholelabs/logging/types"
 )
 
 var (
@@ -51,7 +51,7 @@ func New(options *Options) (*Listener, error) {
 	lis := &Listener{
 		listener:             unixListener,
 		availableConnections: make(chan *net.UnixConn, options.MaxConn),
-		logger:               options.Logger,
+		logger:               options.Logger.SubLogger("listener"),
 	}
 
 	lis.state.Store(stateListening)
@@ -82,7 +82,7 @@ func (lis *Listener) Close() error {
 		for conn := range lis.availableConnections {
 			err = conn.Close()
 			if err != nil {
-				lis.logger.Warnf("[Listener] unable to close connection: %v\n", err)
+				lis.logger.Warn().Err(err).Msg("unable to close connection")
 			}
 		}
 	}
@@ -93,13 +93,13 @@ func (lis *Listener) accept() {
 	for {
 		conn, err := lis.listener.AcceptUnix()
 		if err != nil {
-			lis.logger.Errorf("[Listener] unable to accept connection: %v\n", err)
+			lis.logger.Error().Err(err).Msg("unable to accept connection")
 			goto OUT
 		}
 		select {
 		case lis.availableConnections <- conn:
 		default:
-			lis.logger.Warn("[Listener] connection dropped\n")
+			lis.logger.Warn().Msg("connection dropped")
 		}
 	}
 OUT:

@@ -4,6 +4,7 @@ package rpc
 
 import (
 	"context"
+	"github.com/loopholelabs/logging/types"
 	"io"
 	"math/rand"
 	"net"
@@ -21,7 +22,6 @@ import (
 
 func echoHandle(t *testing.T) HandleFunc {
 	return func(req *Request, res *Response) {
-		//t.Logf("handling request %s of type %d", req.UUID, req.Type)
 		assert.Equal(t, req.UUID, res.UUID)
 		assert.NoError(t, res.Error)
 		res.Data = req.Data
@@ -30,7 +30,8 @@ func echoHandle(t *testing.T) HandleFunc {
 
 func TestRPCSimple(t *testing.T) {
 	c1, c2 := net.Pipe()
-	logger := logging.NewTestLogger(t)
+	logger := logging.NewTest(t, logging.Zerolog, t.Name())
+	logger.SetLevel(types.DebugLevel)
 	ctx := context.Background()
 
 	client := NewClient(echoHandle(t), logger)
@@ -77,7 +78,8 @@ func TestRPCSimple(t *testing.T) {
 }
 
 func TestRPCSingleDisconnect(t *testing.T) {
-	logger := logging.NewTestLogger(t)
+	logger := logging.NewTest(t, logging.Zerolog, t.Name())
+	logger.SetLevel(types.DebugLevel)
 	ctx := context.Background()
 
 	client := NewClient(echoHandle(t), logger)
@@ -139,7 +141,8 @@ func TestRPCSingleDisconnect(t *testing.T) {
 
 func TestRPCRandomDisconnects(t *testing.T) {
 	const testTime = time.Second * 10
-	logger := logging.NewTestLogger(t)
+	logger := logging.NewTest(t, logging.Zerolog, t.Name())
+	logger.SetLevel(types.DebugLevel)
 	ctx := context.Background()
 
 	client := NewClient(echoHandle(t), logger)

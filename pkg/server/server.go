@@ -8,7 +8,7 @@ import (
 	"net"
 	"sync"
 
-	"github.com/loopholelabs/logging"
+	logging "github.com/loopholelabs/logging/types"
 
 	"github.com/loopholelabs/sentry/pkg/listener"
 	"github.com/loopholelabs/sentry/pkg/rpc"
@@ -43,7 +43,7 @@ func New(options *Options) (*Server, error) {
 
 	s := &Server{
 		listener: lis,
-		logger:   options.Logger,
+		logger:   options.Logger.SubLogger("server"),
 	}
 
 	s.ctx, s.cancel = context.WithCancel(context.Background())
@@ -76,18 +76,18 @@ func (s *Server) handle() {
 		case <-s.ctx.Done():
 			goto OUT
 		default:
-			s.logger.Info("[Server] waiting for connection")
+			s.logger.Info().Msg("waiting for connection")
 			s.activeConn, err = s.listener.Accept()
 			if err != nil {
-				s.logger.Error("[Server] unable to accept connection")
+				s.logger.Error().Err(err).Msg("unable to accept connection")
 				goto OUT
 			}
-			s.logger.Info("[Server] connection was accepted")
+			s.logger.Info().Msg("connection was accepted")
 			s.rpc.HandleConnection(s.activeConn)
 		}
 	}
 OUT:
-	s.logger.Info("[Server] shutting down handle")
+	s.logger.Info().Msg("shutting down handle")
 	s.cancel()
 	s.wg.Done()
 }
