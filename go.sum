@@ -4,8 +4,8 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/godbus/dbus/v5 v5.0.4/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/loopholelabs/logging v0.2.2 h1:4STFrZmvp+4hcLTtpQ98iu+Kb6tEApmqCURoC/uiHR0=
-github.com/loopholelabs/logging v0.2.2/go.mod h1:uRDUydiqPqKbZkb0WoQ3dfyAcJ2iOMhxdEafZssLVv0=
+github.com/loopholelabs/logging v0.2.3 h1:RZKl1Mare+hOZsxYUtE8V94Ic0xGEZk4NQtE+3kmG84=
+github.com/loopholelabs/logging v0.2.3/go.mod h1:uRDUydiqPqKbZkb0WoQ3dfyAcJ2iOMhxdEafZssLVv0=
 github.com/loopholelabs/polyglot/v2 v2.0.1 h1:JVSrXwx3jzr6/IrUe7Y1f7R3I6bFaVjLlPNLjJlmQaU=
 github.com/loopholelabs/polyglot/v2 v2.0.1/go.mod h1:kFoSKvnKAWmV0ICfbaCHDv/+cz5LSuA+xXG4WtYV/z4=
 github.com/mattn/go-colorable v0.1.13 h1:fFA4WZxdEF4tXPZVKMLwD8oUnCTTo08duU7wxecdEvA=
