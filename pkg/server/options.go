@@ -3,8 +3,7 @@
 package server
 
 import (
-	"github.com/loopholelabs/logging"
-
+	logging "github.com/loopholelabs/logging/types"
 	"github.com/loopholelabs/sentry/pkg/listener"
 )
 

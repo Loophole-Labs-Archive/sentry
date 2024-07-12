@@ -3,7 +3,7 @@
 package client
 
 import (
-	"github.com/loopholelabs/logging"
+	logging "github.com/loopholelabs/logging/types"
 	"github.com/loopholelabs/sentry/pkg/rpc"
 )
 

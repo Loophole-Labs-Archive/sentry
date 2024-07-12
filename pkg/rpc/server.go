@@ -6,15 +6,10 @@ import (
 	"context"
 	"io"
 	"sync"
-	"time"
 
 	"github.com/google/uuid"
-	"github.com/loopholelabs/logging"
+	logging "github.com/loopholelabs/logging/types"
 	"github.com/loopholelabs/polyglot/v2"
-)
-
-const (
-	Timeout = 5 * time.Second
 )
 
 type Server struct {
@@ -38,7 +33,7 @@ func NewServer(ctx context.Context, logger logging.Logger) *Server {
 		priorityWriteQueue: make(chan *InflightRequest, MaximumQueueSize),
 		writeQueue:         make(chan *InflightRequest, MaximumQueueSize),
 		inflight:           make(map[uuid.UUID]*InflightRequest),
-		logger:             logger,
+		logger:             logger.SubLogger("rpc"),
 	}
 	return s
 }
@@ -54,11 +49,11 @@ func (s *Server) HandleConnection(conn io.ReadWriteCloser) {
 	go s.read()
 
 	<-s.ctx.Done()
-	s.logger.Infof("[Server] shutting down connection\n")
+	s.logger.Info().Msg("shutting down connection")
 	_ = s.activeConn.Close()
-	s.logger.Infof("[Server] connection was closed\n")
+	s.logger.Info().Msg("connection was closed")
 	s.wg.Wait()
-	s.logger.Infof("[Server] read and write loops have shut down\n")
+	s.logger.Info().Msg("write and read loops have shut down")
 }
 
 func (s *Server) Do(ctx context.Context, request *Request, response *Response) (err error) {
@@ -79,21 +74,21 @@ func (s *Server) Do(ctx context.Context, request *Request, response *Response) (
 		err = context.Canceled
 		goto OUT
 	case <-s.externalCtx.Done():
-		s.logger.Warnf("[Server] context was canceled, cancelling request %s of type %d\n", inflightRequest.Request.UUID, inflightRequest.Request.Type)
+		s.logger.Warn().Str("uuid", inflightRequest.Request.UUID.String()).Uint32("type", inflightRequest.Request.Type).Msg("context was canceled, cancelling request")
 		err = context.DeadlineExceeded
 		goto OUT
 	case s.writeQueue <- inflightRequest:
-		s.logger.Infof("[Server] request %s of type %d was queued\n", inflightRequest.Request.UUID, inflightRequest.Request.Type)
+		s.logger.Warn().Str("uuid", inflightRequest.Request.UUID.String()).Uint32("type", inflightRequest.Request.Type).Msg("request was queued")
 	}
 
 	select {
 	case <-ctx.Done():
 		err = context.Canceled
 	case <-s.externalCtx.Done():
-		s.logger.Warnf("[Server] context was canceled, cancelling request %s of type %d\n", inflightRequest.Request.UUID, inflightRequest.Request.Type)
+		s.logger.Warn().Str("uuid", inflightRequest.Request.UUID.String()).Uint32("type", inflightRequest.Request.Type).Msg("context was canceled, cancelling request")
 		err = context.DeadlineExceeded
 	case <-inflightRequest.complete:
-		s.logger.Infof("[Server] request %s of type %d was completed\n", inflightRequest.Request.UUID, inflightRequest.Request.Type)
+		s.logger.Info().Str("uuid", inflightRequest.Request.UUID.String()).Uint32("type", inflightRequest.Request.Type).Msg("request was completed")
 	}
 
 OUT:
@@ -117,18 +112,18 @@ func (s *Server) write() {
 			priority = false
 		}
 		if !ok {
-			s.logger.Error("[Server] write queue was closed\n")
+			s.logger.Error().Msg("write queue was closed")
 			goto OUT
 		}
-		s.logger.Infof("[Server] writing request %s of type %d (priority %t)\n", inflightRequest.Request.UUID, inflightRequest.Request.Type, priority)
+		s.logger.Info().Str("uuid", inflightRequest.Request.UUID.String()).Uint32("type", inflightRequest.Request.Type).Bool("priority", priority).Msg("writing request")
 		_, err := s.activeConn.Write(inflightRequest.RequestBuffer.Bytes())
 		if err != nil {
-			s.logger.Errorf("[Server] unable to write request: %v\n", err)
+			s.logger.Error().Err(err).Msg("unable to write request")
 			select {
 			case s.priorityWriteQueue <- inflightRequest:
-				s.logger.Infof("[Server] requeueing request %s of type %d for priority writing\n", inflightRequest.Request.UUID, inflightRequest.Request.Type)
+				s.logger.Info().Str("uuid", inflightRequest.Request.UUID.String()).Uint32("type", inflightRequest.Request.Type).Msg("requeueing request for priority writing")
 			default:
-				s.logger.Warnf("[Server] priority write queue is full, requeue of request %s of type %d for priority writing will block\n", inflightRequest.Request.UUID, inflightRequest.Request.Type)
+				s.logger.Warn().Str("uuid", inflightRequest.Request.UUID.String()).Uint32("type", inflightRequest.Request.Type).Msg("priority write queue is full, requeue of request for priority writing will block")
 				s.priorityWriteQueue <- inflightRequest
 			}
 			goto OUT
@@ -136,7 +131,7 @@ func (s *Server) write() {
 		polyglot.PutBuffer(inflightRequest.RequestBuffer)
 	}
 OUT:
-	s.logger.Infof("[Server] shutting down write loop\n")
+	s.logger.Info().Msg("shutting down write loop")
 	s.cancel()
 	s.wg.Done()
 }
@@ -151,35 +146,35 @@ func (s *Server) read() {
 	for {
 		n, err = io.ReadAtLeast(s.activeConn, buf, MinimumResponseSize)
 		if err != nil {
-			s.logger.Errorf("[Server] unable to read from connection: %v\n", err)
+			s.logger.Error().Err(err).Msg("unable to read from connection")
 			goto OUT
 		}
 		_uuid, err = DecodeUUID(buf[:n])
 		if err != nil {
-			s.logger.Errorf("[Server] unable to decode UUID: %v\n", err)
+			s.logger.Error().Err(err).Msg("unable to decode UUID")
 			continue
 		}
 		s.inflightMutex.RLock()
 		inflightRequest, ok = s.inflight[_uuid]
 		s.inflightMutex.RUnlock()
 		if !ok {
-			s.logger.Errorf("[Server] unknown request UUID: %s\n", _uuid)
+			s.logger.Error().Str("uuid", _uuid.String()).Msg("unknown request UUID")
 			continue
 		}
 		err = inflightRequest.Response.Decode(buf[:n])
 		if err != nil {
 			inflightRequest.Response.UUID = _uuid
-			s.logger.Errorf("[Server] unable to decode response for request %s: %v\n", err, inflightRequest.Response.UUID)
+			s.logger.Error().Str("uuid", inflightRequest.Response.UUID.String()).Err(err).Msg("unable to decode response")
 			inflightRequest.Request.Data = nil
 			inflightRequest.Response.Error = err
 			close(inflightRequest.complete)
 			continue
 		}
-		s.logger.Infof("[Server] handling response for request %s of type %d for processing\n", inflightRequest.Request.UUID, inflightRequest.Request.Type)
+		s.logger.Info().Str("uuid", inflightRequest.Request.UUID.String()).Uint32("type", inflightRequest.Request.Type).Msg("handling response for processing")
 		close(inflightRequest.complete)
 	}
 OUT:
-	s.logger.Infof("[Server] shutting down read loop\n")
+	s.logger.Info().Msg("shutting down read loop")
 	s.cancel()
 	s.wg.Done()
 }

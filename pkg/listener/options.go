@@ -2,7 +2,9 @@
 
 package listener
 
-import "github.com/loopholelabs/logging"
+import (
+	logging "github.com/loopholelabs/logging/types"
+)
 
 type Options struct {
 	UnixPath string

@@ -7,6 +7,7 @@ package vsock
 import (
 	"errors"
 	"io"
+	"net"
 	"sync/atomic"
 
 	"golang.org/x/sys/unix"
@@ -36,6 +37,9 @@ func newConn(fd int) *conn {
 }
 
 func (c *conn) Read(b []byte) (int, error) {
+	if c.state.Load() != stateConnected {
+		return 0, net.ErrClosed
+	}
 	n, err := unix.Read(c.fd, b)
 	if err != nil {
 		if errors.Is(err, unix.EBADF) {
@@ -50,6 +54,9 @@ func (c *conn) Read(b []byte) (int, error) {
 }
 
 func (c *conn) Write(b []byte) (int, error) {
+	if c.state.Load() != stateConnected {
+		return 0, net.ErrClosed
+	}
 	n, err := unix.Write(c.fd, b)
 	if err != nil {
 		if errors.Is(err, unix.EBADF) {
