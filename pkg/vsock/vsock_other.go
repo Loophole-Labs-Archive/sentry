@@ -5,6 +5,7 @@
 package vsock
 
 import (
+	"context"
 	"errors"
 
 	"github.com/loopholelabs/sentry/pkg/client"
@@ -15,5 +16,9 @@ var (
 )
 
 func DialFunc(uint32, uint32) (client.DialFunc, error) {
+	return nil, UnsupportedErr
+}
+
+func DialContext(context.Context, uint32, uint32) (io.ReadWriteCloser, error) {
 	return nil, UnsupportedErr
 }
