@@ -4,7 +4,6 @@ package rpc
 
 import (
 	"context"
-	"github.com/loopholelabs/logging/types"
 	"io"
 	"math/rand"
 	"net"
@@ -16,8 +15,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/loopholelabs/logging"
+	"github.com/loopholelabs/logging/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
 )
 
 func echoHandle(t *testing.T) HandleFunc {
@@ -29,12 +30,14 @@ func echoHandle(t *testing.T) HandleFunc {
 }
 
 func TestRPCSimple(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	c1, c2 := net.Pipe()
-	logger := logging.NewTest(t, logging.Zerolog, t.Name())
+	logger := logging.Test(t, logging.Zerolog, t.Name())
 	logger.SetLevel(types.DebugLevel)
 	ctx := context.Background()
 
-	client := NewClient(echoHandle(t), logger)
+	client := NewClient(ctx, echoHandle(t), logger)
 	server := NewServer(ctx, logger)
 
 	var wg sync.WaitGroup
@@ -78,11 +81,13 @@ func TestRPCSimple(t *testing.T) {
 }
 
 func TestRPCSingleDisconnect(t *testing.T) {
-	logger := logging.NewTest(t, logging.Zerolog, t.Name())
+	defer goleak.VerifyNone(t)
+
+	logger := logging.Test(t, logging.Zerolog, t.Name())
 	logger.SetLevel(types.DebugLevel)
 	ctx := context.Background()
 
-	client := NewClient(echoHandle(t), logger)
+	client := NewClient(ctx, echoHandle(t), logger)
 	server := NewServer(ctx, logger)
 
 	var wg sync.WaitGroup
@@ -140,12 +145,14 @@ func TestRPCSingleDisconnect(t *testing.T) {
 }
 
 func TestRPCRandomDisconnects(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
 	const testTime = time.Second * 10
-	logger := logging.NewTest(t, logging.Zerolog, t.Name())
+	logger := logging.Test(t, logging.Zerolog, t.Name())
 	logger.SetLevel(types.DebugLevel)
 	ctx := context.Background()
 
-	client := NewClient(echoHandle(t), logger)
+	client := NewClient(ctx, echoHandle(t), logger)
 	server := NewServer(ctx, logger)
 
 	var wg sync.WaitGroup

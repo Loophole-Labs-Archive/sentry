@@ -12,6 +12,8 @@ import (
 )
 
 type Client struct {
+	externalCtx context.Context
+
 	handle HandleFunc
 
 	processQueue       chan *ProcessRequest
@@ -24,13 +26,14 @@ type Client struct {
 
 	lastProcessRequest *ProcessRequest
 
-	logger   logging.Logger
+	logger   logging.SubLogger
 	workerWg sync.WaitGroup
 	wg       sync.WaitGroup
 }
 
-func NewClient(handle HandleFunc, logger logging.Logger) *Client {
+func NewClient(ctx context.Context, handle HandleFunc, logger logging.SubLogger) *Client {
 	c := &Client{
+		externalCtx:        ctx,
 		handle:             handle,
 		processQueue:       make(chan *ProcessRequest, MaximumQueueSize),
 		priorityWriteQueue: make(chan *ProcessRequest, MaximumQueueSize),
@@ -41,12 +44,13 @@ func NewClient(handle HandleFunc, logger logging.Logger) *Client {
 		c.workerWg.Add(1)
 		go c.worker(i)
 	}
+
 	return c
 }
 
 func (c *Client) HandleConnection(conn io.ReadWriteCloser) {
 	c.activeConn = conn
-	c.ctx, c.cancel = context.WithCancel(context.Background())
+	c.ctx, c.cancel = context.WithCancel(c.externalCtx)
 
 	c.wg.Add(1)
 	go c.read()
@@ -60,6 +64,12 @@ func (c *Client) HandleConnection(conn io.ReadWriteCloser) {
 	c.logger.Info().Msg("connection was closed")
 	c.wg.Wait()
 	c.logger.Info().Msg("read and write loops have shut down")
+}
+
+func (c *Client) Close() error {
+	c.cancel()
+	c.wg.Wait()
+	return nil
 }
 
 func (c *Client) read() {
@@ -144,7 +154,11 @@ func (c *Client) worker(id int) {
 	var ok bool
 	c.logger.Info().Int("worker", id).Msg("starting worker")
 	for {
-		processRequest, ok = <-c.processQueue
+		select {
+		case <-c.ctx.Done():
+			goto OUT
+		case processRequest, ok = <-c.processQueue:
+		}
 		if !ok {
 			c.logger.Error().Int("worker", id).Msg("process queue was closed")
 			goto OUT
@@ -166,3 +180,23 @@ OUT:
 	c.logger.Info().Int("worker", id).Msg("shutting down worker")
 	c.workerWg.Done()
 }
+
+//func (c *Client) heartbeat() {
+//	ticker := time.NewTicker(DefaultPingInterval)
+//	defer ticker.Stop()
+//	var err error
+//	for {
+//		select {
+//		case <-c.closeCh:
+//			c.wg.Done()
+//			return
+//		case <-ticker.C:
+//			err = c.writePacket(PINGPacket, false)
+//			if err != nil {
+//				c.wg.Done()
+//				_ = c.closeWithError(err)
+//				return
+//			}
+//		}
+//	}
+//}

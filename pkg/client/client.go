@@ -29,7 +29,7 @@ type Client struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	dial   DialFunc
-	logger logging.Logger
+	logger logging.SubLogger
 	wg     sync.WaitGroup
 }
 
@@ -42,7 +42,7 @@ func New(options *Options) (*Client, error) {
 		logger: options.Logger.SubLogger("client"),
 	}
 	c.ctx, c.cancel = context.WithCancel(context.Background())
-	c.rpc = rpc.NewClient(options.Handle, options.Logger)
+	c.rpc = rpc.NewClient(c.ctx, options.Handle, options.Logger)
 	c.wg.Add(1)
 	go c.loop()
 	return c, nil

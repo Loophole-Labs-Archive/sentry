@@ -7,11 +7,11 @@ package vsock
 import (
 	"context"
 	"errors"
-	"github.com/loopholelabs/sentry/internal/cancel"
 	"io"
 
 	"golang.org/x/sys/unix"
 
+	"github.com/loopholelabs/sentry/internal/cancel"
 	"github.com/loopholelabs/sentry/pkg/client"
 )
 

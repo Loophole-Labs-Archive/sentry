@@ -9,7 +9,7 @@ import (
 type Options struct {
 	UnixPath string
 	MaxConn  int
-	Logger   logging.Logger
+	Logger   logging.SubLogger
 }
 
 func validOptions(options *Options) bool {

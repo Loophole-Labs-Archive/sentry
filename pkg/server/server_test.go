@@ -5,16 +5,18 @@ package server
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/loopholelabs/sentry/pkg/client"
-	"github.com/loopholelabs/sentry/pkg/rpc"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"net"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/loopholelabs/logging"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
+
+	"github.com/loopholelabs/sentry/pkg/client"
+	"github.com/loopholelabs/sentry/pkg/rpc"
 )
 
 func testDialFunc(path string) client.DialFunc {
@@ -35,7 +37,9 @@ func echoHandle(t *testing.T) rpc.HandleFunc {
 }
 
 func TestReconnect(t *testing.T) {
-	logger := logging.NewTest(t, logging.Zerolog, t.Name())
+	defer goleak.VerifyNone(t)
+
+	logger := logging.Test(t, logging.Zerolog, t.Name())
 	serverOpts := &Options{
 		UnixPath: fmt.Sprintf("%s/%s.sock", t.TempDir(), t.Name()),
 		MaxConn:  1,
