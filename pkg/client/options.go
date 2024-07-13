@@ -10,7 +10,7 @@ import (
 type Options struct {
 	Handle rpc.HandleFunc
 	Dial   DialFunc
-	Logger logging.Logger
+	Logger logging.SubLogger
 }
 
 func validOptions(options *Options) bool {

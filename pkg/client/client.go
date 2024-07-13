@@ -13,7 +13,7 @@ import (
 	"github.com/loopholelabs/sentry/pkg/rpc"
 )
 
-type DialFunc func() (io.ReadWriteCloser, error)
+type DialFunc func(ctx context.Context) (io.ReadWriteCloser, error)
 
 const (
 	maxBackoff = time.Second
@@ -29,7 +29,7 @@ type Client struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 	dial   DialFunc
-	logger logging.Logger
+	logger logging.SubLogger
 	wg     sync.WaitGroup
 }
 
@@ -42,7 +42,7 @@ func New(options *Options) (*Client, error) {
 		logger: options.Logger.SubLogger("client"),
 	}
 	c.ctx, c.cancel = context.WithCancel(context.Background())
-	c.rpc = rpc.NewClient(options.Handle, options.Logger)
+	c.rpc = rpc.NewClient(c.ctx, options.Handle, options.Logger)
 	c.wg.Add(1)
 	go c.loop()
 	return c, nil
@@ -64,7 +64,7 @@ func (c *Client) connect() io.ReadWriteCloser {
 			return nil
 		default:
 		}
-		conn, err = c.dial()
+		conn, err = c.dial(c.ctx)
 		if err == nil {
 			return conn
 		}

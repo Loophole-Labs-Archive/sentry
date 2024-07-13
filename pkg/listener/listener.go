@@ -31,7 +31,7 @@ type Listener struct {
 	listener             *net.UnixListener
 	availableConnections chan *net.UnixConn
 	state                atomic.Uint32
-	logger               logging.Logger
+	logger               logging.SubLogger
 	wg                   sync.WaitGroup
 }
 

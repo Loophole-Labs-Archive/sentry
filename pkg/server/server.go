@@ -28,7 +28,7 @@ type Server struct {
 	cancel context.CancelFunc
 	rpc    *rpc.Server
 
-	logger logging.Logger
+	logger logging.SubLogger
 	wg     sync.WaitGroup
 }
 
@@ -61,6 +61,10 @@ func (s *Server) Do(ctx context.Context, request *rpc.Request, response *rpc.Res
 
 func (s *Server) Close() error {
 	err := s.listener.Close()
+	if err != nil {
+		return errors.Join(CloseErr, err)
+	}
+	err = s.rpc.Close()
 	if err != nil {
 		return errors.Join(CloseErr, err)
 	}

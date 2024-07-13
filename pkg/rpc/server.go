@@ -23,11 +23,11 @@ type Server struct {
 	ctx        context.Context
 	cancel     context.CancelFunc
 
-	logger logging.Logger
+	logger logging.SubLogger
 	wg     sync.WaitGroup
 }
 
-func NewServer(ctx context.Context, logger logging.Logger) *Server {
+func NewServer(ctx context.Context, logger logging.SubLogger) *Server {
 	s := &Server{
 		externalCtx:        ctx,
 		priorityWriteQueue: make(chan *InflightRequest, MaximumQueueSize),
@@ -96,6 +96,12 @@ OUT:
 	delete(s.inflight, request.UUID)
 	s.inflightMutex.Unlock()
 	return err
+}
+
+func (s *Server) Close() error {
+	s.cancel()
+	s.wg.Wait()
+	return nil
 }
 
 func (s *Server) write() {
