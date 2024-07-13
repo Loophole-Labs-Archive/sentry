@@ -6,19 +6,27 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 )
 
 var (
 	CleanupErr = errors.New("unable to cleanup")
 )
 
+const (
+	StateWatching = iota
+	StateClosed
+)
+
 type CleanupFunc func() error
 
 type Cancel struct {
-	wg      sync.WaitGroup
-	cancel  chan struct{}
-	error   chan error
-	cleanup CleanupFunc
+	wg       sync.WaitGroup
+	cancel   chan struct{}
+	error    chan error
+	cleanup  CleanupFunc
+	state    atomic.Uint32
+	closeErr error
 }
 
 func New(ctx context.Context, cleanup CleanupFunc) *Cancel {
@@ -33,9 +41,16 @@ func New(ctx context.Context, cleanup CleanupFunc) *Cancel {
 }
 
 func (c *Cancel) Close() error {
-	close(c.cancel)
-	c.wg.Wait()
-	return <-c.error
+	if c.state.CompareAndSwap(StateWatching, StateClosed) {
+		close(c.cancel)
+		c.wg.Wait()
+		c.closeErr = <-c.error
+	}
+	return c.closeErr
+}
+
+func (c *Cancel) CloseIgnoreError() {
+	_ = c.Close()
 }
 
 func (c *Cancel) watch(ctx context.Context) {
