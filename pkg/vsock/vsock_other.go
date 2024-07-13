@@ -7,6 +7,7 @@ package vsock
 import (
 	"context"
 	"errors"
+	"io"
 
 	"github.com/loopholelabs/sentry/pkg/client"
 )

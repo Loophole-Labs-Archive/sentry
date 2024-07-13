@@ -34,6 +34,7 @@ func DialContext(ctx context.Context, cid uint32, port uint32) (io.ReadWriteClos
 		return nil, errors.Join(CreationErr, err)
 	}
 	c := cancel.New(ctx, cleanup(fd))
+	defer c.CloseIgnoreError()
 	if err = unix.Connect(fd, &unix.SockaddrVM{
 		CID:  cid,
 		Port: port,
